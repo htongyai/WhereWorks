@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "890212341343",
+    "project_id": "wherewroks",
+    "storage_bucket": "wherewroks.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890212341343:android:f36234e6a07ded8ef66dea",
+        "android_client_info": {
+          "package_name": "com.example.whereworks"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBc02ClUJzHzkC0dYJOofXmWNI3gftaHYQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
