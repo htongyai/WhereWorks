@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 import 'preferences_screen.dart';
+import 'profile_upload_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _userName;
   final _auth = AuthService();
   final _firestore = FirebaseFirestore.instance;
+  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -90,6 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (doc.exists) {
         setState(() {
           _userName = doc.data()?['name'] as String?;
+          _profileImageUrl = doc.data()?['profileImageUrl'] as String?;
         });
       }
     }
@@ -98,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final avatarSize = size.width * 0.1;
+    final avatarSize = size.width * 0.05;
     final titleSize = size.width * 0.045;
     final subtitleSize = size.width * 0.035;
     final padding = size.width * 0.04;
@@ -118,23 +121,40 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: EdgeInsets.all(padding),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: avatarSize,
-                    backgroundImage: const AssetImage('assets/images/profile.png'),
+                  GestureDetector(
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileUploadScreen(),
+                        ),
+                      );
+                      if (result != null) {
+                        setState(() {
+                          _profileImageUrl = result;
+                        });
+                      }
+                    },
+                    child: CircleAvatar(
+                      radius: avatarSize,
+                      backgroundImage: _profileImageUrl != null
+                          ? NetworkImage(_profileImageUrl!)
+                          : const AssetImage('assets/images/profile.png') as ImageProvider,
+                    ),
                   ),
                   SizedBox(width: spacing),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Hello ${_userName ?? 'there'},',
+                        'Hello ${_userName?.split(' ').first ?? 'there'},',
                         style: TextStyle(
                           fontSize: titleSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        'Let\'s find a productive place for you',
+                        'Let\'s find a place for you',
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: subtitleSize,

@@ -22,6 +22,7 @@ class AuthService {
     required String password,
     required String name,
     required String phone,
+    required DateTime dateOfBirth,
   }) async {
     final userCredential = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -34,6 +35,7 @@ class AuthService {
       'name': name,
       'email': email,
       'phone': phone,
+      'dateOfBirth': dateOfBirth,
       'createdAt': FieldValue.serverTimestamp(),
     });
 

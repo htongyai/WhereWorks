@@ -36,12 +36,15 @@ dependencies:
   cupertino_icons: ^1.0.6
   firebase_core: ^3.13.0
   cloud_firestore: ^5.6.6
-  firebase_auth: ^5.4.1
+  firebase_auth: ^5.5.2
   geolocator: ^14.0.0
   cached_network_image: ^3.3.1
   flutter_rating_bar: ^4.0.1
   url_launcher: ^6.2.5
   shared_preferences: ^2.2.2
+  firebase_storage: ^12.4.5
+  image_picker: ^1.1.2
+  image: ^4.5.4
 
 
 
