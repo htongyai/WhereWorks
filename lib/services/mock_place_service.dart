@@ -5,7 +5,8 @@ class MockPlaceService {
     Place(
       id: '1',
       name: 'Cafe 46',
-      address: '7 Avenue Area, Pune',
+      area: '7 Avenue',
+      city: 'Pune',
       type: PlaceType.cafe,
       rating: 4.0,
       durationRating: 120,
@@ -28,7 +29,8 @@ class MockPlaceService {
     Place(
       id: '2',
       name: 'Ambrosia',
-      address: '54 Park Street, Pune',
+      area: 'Park Street',
+      city: 'Pune',
       type: PlaceType.restaurant,
       rating: 4.6,
       durationRating: 90,
@@ -50,7 +52,8 @@ class MockPlaceService {
     Place(
       id: '3',
       name: 'WorkHub Coworking',
-      address: 'Tech Park, Baner Road',
+      area: 'Tech Park',
+      city: 'Baner',
       type: PlaceType.coworkingSpace,
       rating: 4.8,
       durationRating: 240,
@@ -73,7 +76,8 @@ class MockPlaceService {
     Place(
       id: '4',
       name: 'FitLife Gym',
-      address: '23 MG Road, Pune',
+      area: 'MG Road',
+      city: 'Pune',
       type: PlaceType.gym,
       rating: 4.3,
       durationRating: 120,
@@ -95,7 +99,8 @@ class MockPlaceService {
     Place(
       id: '5',
       name: 'Central Park',
-      address: '456 Park Avenue, Bangkok',
+      area: 'Park Avenue',
+      city: 'Bangkok',
       description: 'A large public park with various seating areas and free WiFi.',
       imageUrl: 'https://example.com/centralpark.jpg',
       type: PlaceType.publicSpace,
@@ -117,7 +122,8 @@ class MockPlaceService {
     Place(
       id: '6',
       name: 'City Library',
-      address: '789 Book Street, Bangkok',
+      area: 'Book Street',
+      city: 'Bangkok',
       description: 'A modern public library with study areas and free WiFi.',
       imageUrl: 'https://example.com/citylibrary.jpg',
       type: PlaceType.publicSpace,
@@ -139,7 +145,8 @@ class MockPlaceService {
     Place(
       id: '7',
       name: 'Community Fitness Center',
-      address: '123 Fitness Street, Bangkok',
+      area: 'Fitness Street',
+      city: 'Bangkok',
       description: 'A community-run fitness center with basic equipment and free access.',
       imageUrl: 'https://example.com/communityfitness.jpg',
       type: PlaceType.gym,
@@ -172,7 +179,8 @@ class MockPlaceService {
     query = query.toLowerCase();
     return _places.where((place) {
       return place.name.toLowerCase().contains(query) ||
-          place.address.toLowerCase().contains(query) ||
+          place.area.toLowerCase().contains(query) ||
+          place.city.toLowerCase().contains(query) ||
           place.description.toLowerCase().contains(query);
     }).toList();
   }
@@ -181,7 +189,8 @@ class MockPlaceService {
     final newPlace = Place(
       id: ((_places.length + 1).toString()),
       name: placeData['name'],
-      address: placeData['address'],
+      area: placeData['area'],
+      city: placeData['city'],
       type: PlaceType.values.firstWhere(
         (e) => e.toString() == 'PlaceType.${placeData['type']}',
         orElse: () => PlaceType.cafe,

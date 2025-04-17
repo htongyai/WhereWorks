@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'terms_of_use_screen.dart';
 import 'privacy_policy_screen.dart';
+import 'profile_management_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class PreferencesScreen extends StatefulWidget {
   const PreferencesScreen({super.key});
@@ -46,58 +48,105 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
       appBar: AppBar(
         title: const Text('Preferences'),
       ),
-      body: ListView(
+      body: Column(
         children: [
-          ListTile(
-            leading: const Icon(Icons.email),
-            title: const Text('Email'),
-            subtitle: Text(email),
-          ),
-          const Divider(),
-          ListTile(
-            leading: Icon(_isDarkMode ? Icons.dark_mode : Icons.light_mode),
-            title: const Text('Theme'),
-            subtitle: Text(_isDarkMode ? 'Dark Mode' : 'Light Mode'),
-            trailing: Switch(
-              value: _isDarkMode,
-              onChanged: (value) => _toggleTheme(),
+          Expanded(
+            child: ListView(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.email),
+                  title: const Text('Email'),
+                  subtitle: Text(email),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: const Text('Profile Settings'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ProfileManagementScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: Icon(_isDarkMode ? Icons.dark_mode : Icons.light_mode),
+                  title: const Text('Theme'),
+                  subtitle: Text(_isDarkMode ? 'Dark Mode' : 'Light Mode'),
+                  trailing: Switch(
+                    value: _isDarkMode,
+                    onChanged: (value) => _toggleTheme(),
+                  ),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: const Text('Log Out'),
+                  onTap: () => _showLogoutDialog(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete_forever, color: Colors.red),
+                  title: const Text('Delete Account'),
+                  onTap: () => _showDeleteAccountDialog(context),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.description),
+                  title: const Text('Terms of Use'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TermsOfUseScreen(),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip),
+                  title: const Text('Privacy Policy'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PrivacyPolicyScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Log Out'),
-            onTap: () => _showLogoutDialog(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text('Delete Account'),
-            onTap: () => _showDeleteAccountDialog(context),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.description),
-            title: const Text('Terms of Use'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const TermsOfUseScreen(),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Image.asset(
+                  'assets/images/wwlogo.png',
+                  height: 60,
+                  width: 60,
                 ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.privacy_tip),
-            title: const Text('Privacy Policy'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PrivacyPolicyScreen(),
+                const SizedBox(height: 8),
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return Text(
+                        'Version ${snapshot.data!.version}',
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                          fontSize: 12,
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
                 ),
-              );
-            },
+              ],
+            ),
           ),
         ],
       ),

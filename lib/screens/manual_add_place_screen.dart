@@ -4,6 +4,10 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../services/firebase_place_service.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import '../services/auth_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image/image.dart' as img;
+import 'dart:io';
 
 class ManualAddPlaceScreen extends StatefulWidget {
   const ManualAddPlaceScreen({super.key});
@@ -15,12 +19,16 @@ class ManualAddPlaceScreen extends StatefulWidget {
 class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _addressController = TextEditingController();
+  final _areaController = TextEditingController();
+  final _cityController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _seatingNotesController = TextEditingController();
   final _indoorNotesController = TextEditingController();
   final _outdoorNotesController = TextEditingController();
   final _auth = AuthService();
+  final ImagePicker _picker = ImagePicker();
+  File? _image;
+  bool _isLoading = false;
   
   PlaceType _selectedType = PlaceType.cafe;
   double _rating = 0;
@@ -32,21 +40,95 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
   int _priceLevel = 1;
   bool _hasIndoorSeating = false;
   bool _hasOutdoorSeating = false;
-  bool _isSeatingFree = true;
+  SeatingCost _seatingCost = SeatingCost.purchaseRequired;
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        setState(() {
+          _image = File(image.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking image: $e')),
+      );
+    }
+  }
+
+  Future<File> _compressImage(File file) async {
+    final bytes = await file.readAsBytes();
+    final image = img.decodeImage(bytes);
+    if (image == null) throw Exception('Could not decode image');
+
+    final resized = img.copyResize(
+      image,
+      width: 800,
+      height: 800,
+      maintainAspect: true,
+    );
+
+    int quality = 85;
+    List<int> compressedBytes;
+    do {
+      compressedBytes = img.encodeJpg(resized, quality: quality);
+      quality -= 5;
+    } while (compressedBytes.length > 100 * 1024 && quality > 5);
+    
+    final compressedFile = File(file.path.replaceAll('.jpg', '_compressed.jpg'));
+    await compressedFile.writeAsBytes(compressedBytes);
+    
+    print('Final image size: ${compressedBytes.length / 1024}KB with quality: ${quality + 5}');
+    return compressedFile;
+  }
+
+  Future<String?> _uploadImage() async {
+    if (_image == null) return null;
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return null;
+
+      final compressedFile = await _compressImage(_image!);
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('place_images')
+          .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+      final String extension = compressedFile.path.toLowerCase().split('.').last;
+      final String contentType = extension == 'png' ? 'image/png' : 'image/jpeg';
+      await storageRef.putFile(compressedFile, SettableMetadata(contentType: contentType));
+      return await storageRef.getDownloadURL();
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
+  }
 
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
       try {
         final user = _auth.currentUser;
         if (user == null) {
           throw Exception('User not logged in');
         }
 
+        String? imageUrl = await _uploadImage();
+        if (imageUrl == null) {
+          imageUrl = 'https://example.com/placeholder.jpg';
+        }
+
         await FirebasePlaceService().addPlace({
           'name': _nameController.text,
-          'address': _addressController.text,
+          'area': _areaController.text,
+          'city': _cityController.text,
           'description': _descriptionController.text,
-          'imageUrl': 'https://example.com/placeholder.jpg', // Default placeholder image
+          'imageUrl': imageUrl,
           'type': _selectedType.toString().split('.').last,
           'rating': _rating,
           'durationRating': _durationRating,
@@ -62,6 +144,7 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
             'indoorNote': _hasIndoorSeating ? _indoorNotesController.text : null,
             'outdoorNote': _hasOutdoorSeating ? _outdoorNotesController.text : null,
           },
+          'seatingCost': _seatingCost.toString().split('.').last,
         }, user.uid);
         
         if (mounted) {
@@ -74,6 +157,12 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error adding place: $e')),
         );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -81,7 +170,8 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _addressController.dispose();
+    _areaController.dispose();
+    _cityController.dispose();
     _descriptionController.dispose();
     _seatingNotesController.dispose();
     _indoorNotesController.dispose();
@@ -102,6 +192,34 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                    image: _image != null
+                        ? DecorationImage(
+                            image: FileImage(_image!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: _image == null
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate, size: 50),
+                            SizedBox(height: 8),
+                            Text('Tap to add a photo'),
+                          ],
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -117,14 +235,28 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _addressController,
+                controller: _areaController,
                 decoration: const InputDecoration(
-                  labelText: 'Address',
-                  hintText: 'Enter address',
+                  labelText: 'Area',
+                  hintText: 'Enter area (e.g., Sukhumvit, Silom)',
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter an address';
+                    return 'Please enter an area';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _cityController,
+                decoration: const InputDecoration(
+                  labelText: 'City',
+                  hintText: 'Enter city (e.g., Bangkok, Chiang Mai)',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a city';
                   }
                   return null;
                 },
@@ -153,6 +285,24 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
                 onChanged: (value) {
                   setState(() {
                     _selectedType = value!;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<SeatingCost>(
+                value: _seatingCost,
+                decoration: const InputDecoration(
+                  labelText: 'Seating Cost',
+                ),
+                items: SeatingCost.values.map((cost) {
+                  return DropdownMenuItem(
+                    value: cost,
+                    child: Text(_getSeatingCostText(cost)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _seatingCost = value!;
                   });
                 },
               ),
@@ -302,13 +452,22 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submitForm,
+                  onPressed: _isLoading ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Add Place'),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Add Place'),
                 ),
               ),
             ],
@@ -330,6 +489,17 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
         return 'Coworking Space';
       case PlaceType.publicSpace:
         return 'Public Space';
+    }
+  }
+
+  String _getSeatingCostText(SeatingCost cost) {
+    switch (cost) {
+      case SeatingCost.free:
+        return 'Free Entry';
+      case SeatingCost.purchaseRequired:
+        return 'Purchase Required';
+      case SeatingCost.paid:
+        return 'Paid Entry';
     }
   }
 } 

@@ -4,11 +4,11 @@ import 'manual_add_place_screen.dart';
 class AddPlaceOptionsScreen extends StatelessWidget {
   const AddPlaceOptionsScreen({super.key});
 
-  static Future<void> show(BuildContext context) {
-    return showDialog(
+  static Future<bool> show(BuildContext context) {
+    return showDialog<bool>(
       context: context,
       builder: (context) => const AddPlaceOptionsScreen(),
-    );
+    ).then((value) => value ?? false);
   }
 
   @override

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/place.dart';
 import '../services/firebase_place_service.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'place_details_screen.dart';
+import 'home_screen.dart';
 
 class SavedPlacesScreen extends StatefulWidget {
   const SavedPlacesScreen({super.key});
@@ -13,206 +15,222 @@ class SavedPlacesScreen extends StatefulWidget {
 }
 
 class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
-  final _placeService = FirebasePlaceService();
+  final FirebasePlaceService _placeService = FirebasePlaceService();
   final _auth = AuthService();
+  final _firestore = FirebaseFirestore.instance;
+  final _searchController = TextEditingController();
   List<Place> _savedPlaces = [];
+  List<Place> _filteredPlaces = [];
   bool _isLoading = true;
-
-  double _getResponsiveSize(BuildContext context, double size) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final shortestSide = screenWidth < screenHeight ? screenWidth : screenHeight;
-    return size * (shortestSide / 375); // 375 is a standard mobile width
-  }
-
-  double _getImageSize(BuildContext context) {
-    return _getResponsiveSize(context, 120);
-  }
-
-  double _getPadding(BuildContext context) {
-    return _getResponsiveSize(context, 16);
-  }
-
-  double _getIconSize(BuildContext context) {
-    return _getResponsiveSize(context, 24);
-  }
-
-  double _getFontSize(BuildContext context, double baseSize) {
-    return _getResponsiveSize(context, baseSize);
-  }
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadSavedPlaces();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text;
+      _filterPlaces();
+    });
+  }
+
+  void _filterPlaces() {
+    if (_searchQuery.isEmpty) {
+      setState(() {
+        _filteredPlaces = _savedPlaces;
+      });
+      return;
+    }
+
+    setState(() {
+      _filteredPlaces = _savedPlaces.where((place) {
+        return _searchQuery.isEmpty ||
+            place.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            place.area.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            place.city.toLowerCase().contains(_searchQuery.toLowerCase());
+      }).toList();
+    });
   }
 
   Future<void> _loadSavedPlaces() async {
-    try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        final places = await _placeService.getSavedPlaces(user.uid);
-        setState(() {
-          _savedPlaces = places;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error loading saved places: $e');
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
+    setState(() {
+      _isLoading = true;
+    });
 
-  Future<void> _deleteSavedPlace(String placeId) async {
     try {
       final user = _auth.currentUser;
       if (user == null) return;
 
+      final places = await _placeService.getSavedPlaces(user.uid);
       setState(() {
-        _savedPlaces.removeWhere((place) => place.id == placeId);
+        _savedPlaces = places;
+        _filteredPlaces = places;
+        _isLoading = false;
       });
-
-      await _placeService.unsavePlace(placeId, user.uid);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-     SnackBar(
-            content: Text('Place removed from saved list'),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () {
-                _placeService.savePlace(placeId, user.uid);
-                _loadSavedPlaces();
-              },
-            ),
-          ),
-        );
-      }
     } catch (e) {
-      print('Error deleting saved place: $e');
+      setState(() {
+        _isLoading = false;
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Error loading saved places: $e')),
         );
       }
-      _loadSavedPlaces(); // Reload to ensure consistency
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final imageSize = _getImageSize(context);
-    final padding = _getPadding(context);
-    final iconSize = _getIconSize(context);
-    final titleFontSize = _getFontSize(context, 18);
-    final subtitleFontSize = _getFontSize(context, 14);
-    final emptyStateIconSize = _getFontSize(context, 64);
-    final emptyStateFontSize = _getFontSize(context, 18);
+    final size = MediaQuery.of(context).size;
+    final padding = size.width * 0.04;
+    final spacing = size.height * 0.02;
+    final cardImageHeight = size.height * 0.15;
+    final cardTitleSize = size.width * 0.04;
+    final cardSubtitleSize = size.width * 0.03;
+    final chipTextSize = size.width * 0.025;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Saved Places',
-          style: TextStyle(fontSize: _getFontSize(context, 20)),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _savedPlaces.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.bookmark_border,
-                        size: emptyStateIconSize,
-                        color: Colors.grey[400],
-                      ),
-                      SizedBox(height: padding),
-                      Text(
-                        'No saved places yet',
-                        style: TextStyle(
-                          fontSize: emptyStateFontSize,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(padding),
+          child: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Saved Places',
+                    style: TextStyle(
+                      fontSize: size.width * 0.06,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadSavedPlaces,
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(padding),
-                    itemCount: _savedPlaces.length,
+                  Text(
+                    'Your favorite workspaces',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: size.width * 0.035,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: padding),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search Places / Area',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _searchController.clear();
+                    _filterPlaces();
+                  });
+                },
+                child: Container(
+                  margin: EdgeInsets.all(spacing),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey[200],
+            ),
+          ),
+        ),
+        SizedBox(height: spacing),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadSavedPlaces,
+            child: _savedPlaces.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.bookmark_border,
+                          size: size.width * 0.2,
+                          color: Colors.grey[400],
+                        ),
+                        SizedBox(height: spacing),
+                        Text(
+                          'No saved places yet',
+                          style: TextStyle(
+                            fontSize: size.width * 0.045,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: spacing * 0.5),
+                        Text(
+                          'Save places to see them here',
+                          style: TextStyle(
+                            fontSize: size.width * 0.035,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: EdgeInsets.only(
+                      left: padding,
+                      right: padding,
+                      top: padding,
+                      bottom: size.height * 0.1,
+                    ),
+                    itemCount: _filteredPlaces.length,
                     itemBuilder: (context, index) {
-                      final place = _savedPlaces[index];
-                      return Dismissible(
-                        key: Key(place.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: EdgeInsets.only(right: padding),
-                          child: Icon(
-                            Icons.delete,
-                            color: Colors.white,
-                            size: iconSize,
-                          ),
-                        ),
-                        onDismissed: (direction) => _deleteSavedPlace(place.id),
-                        child: Card(
-                          margin: EdgeInsets.only(bottom: padding),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.all(padding),
-                            minVerticalPadding: padding,
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(padding / 2),
-                              child: CachedNetworkImage(
-                                imageUrl: place.imageUrl,
-                                width: imageSize,
-                                height: imageSize,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  width: imageSize,
-                                  height: imageSize,
-                                  color: Colors.grey[200],
-                                ),
-                                errorWidget: (context, url, error) => Container(
-                                  width: imageSize,
-                                  height: imageSize,
-                                  color: Colors.grey[200],
-                                  child: Icon(Icons.error, size: iconSize),
-                                ),
-                              ),
+                      return PlaceCard(
+                        place: _filteredPlaces[index],
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  PlaceDetailsScreen(place: _filteredPlaces[index]),
                             ),
-                            title: Text(
-                              place.name,
-                              style: TextStyle(fontSize: titleFontSize),
-                            ),
-                            subtitle: Text(
-                              place.address,
-                              style: TextStyle(fontSize: subtitleFontSize),
-                            ),
-                            trailing: IconButton(
-                              icon: Icon(Icons.delete_outline, size: iconSize),
-                              onPressed: () => _deleteSavedPlace(place.id),
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => PlaceDetailsScreen(place: place),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+                          );
+                        },
+                        imageHeight: cardImageHeight,
+                        titleSize: cardTitleSize,
+                        subtitleSize: cardSubtitleSize,
+                        chipTextSize: chipTextSize,
                       );
                     },
                   ),
-                ),
+          ),
+        ),
+      ],
     );
   }
 } 

@@ -338,7 +338,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  widget.place.address,
+                                  '${widget.place.area}, ${widget.place.city}',
                                   style: TextStyle(color: Colors.grey[600]),
                                 ),
                               ),
@@ -543,7 +543,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                     child: ElevatedButton(
                       onPressed: () async {
                         final url = Uri.parse(
-                          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(widget.place.address)}',
+                          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${widget.place.area}, ${widget.place.city}')}',
                         );
                         if (await canLaunchUrl(url)) {
                           await launchUrl(url);

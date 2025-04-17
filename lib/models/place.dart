@@ -49,7 +49,8 @@ class SeatingLocation {
 class Place {
   final String id;
   final String name;
-  final String address;
+  final String area;
+  final String city;
   final PlaceType type;
   final double rating;
   final int durationRating;
@@ -67,7 +68,8 @@ class Place {
   Place({
     required this.id,
     required this.name,
-    required this.address,
+    required this.area,
+    required this.city,
     required this.type,
     required this.rating,
     required this.durationRating,
@@ -137,7 +139,8 @@ class Place {
     return Place(
       id: doc.id,
       name: data['name'] ?? '',
-      address: data['address'] ?? '',
+      area: data['area'] ?? '',
+      city: data['city'] ?? '',
       type: PlaceType.values.firstWhere(
         (e) => e.toString() == 'PlaceType.${data['type']}',
         orElse: () => PlaceType.cafe,
@@ -166,7 +169,8 @@ class Place {
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
-      'address': address,
+      'area': area,
+      'city': city,
       'type': type.toString().split('.').last,
       'rating': rating,
       'durationRating': durationRating,
@@ -194,7 +198,8 @@ class Place {
     return Place(
       id: id ?? '',
       name: map['name'] as String? ?? '',
-      address: map['address'] as String? ?? '',
+      area: map['area'] as String? ?? '',
+      city: map['city'] as String? ?? '',
       description: map['description'] as String? ?? '',
       imageUrl: map['imageUrl'] as String? ?? '',
       type: PlaceType.values.firstWhere(
@@ -217,7 +222,8 @@ class Place {
     return {
       'id': id,
       'name': name,
-      'address': address,
+      'area': area,
+      'city': city,
       'description': description,
       'imageUrl': imageUrl,
       'type': type.toString().split('.').last,

@@ -37,8 +37,8 @@ class FirebasePlaceService {
           .map((doc) => Place.fromFirestore(doc))
           .where((place) =>
               place.name.toLowerCase().contains(query.toLowerCase()) ||
-              place.address.toLowerCase().contains(query.toLowerCase()) ||
-              place.description.toLowerCase().contains(query.toLowerCase()))
+              place.area.toLowerCase().contains(query.toLowerCase()) ||
+              place.city.toLowerCase().contains(query.toLowerCase()))
           .toList();
     } catch (e) {
       print('Error searching places: $e');
@@ -154,7 +154,11 @@ class FirebasePlaceService {
           .get();
 
       print('Retrieved ${placesSnapshot.docs.length} places from places collection');
-      return placesSnapshot.docs.map((doc) => Place.fromFirestore(doc)).toList();
+      return placesSnapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Place.fromMap(data);
+      }).toList();
     } catch (e) {
       print('Error getting saved places: $e');
       return [];
@@ -210,6 +214,26 @@ class FirebasePlaceService {
     } catch (e) {
       print('Error getting user rating: $e');
       return null;
+    }
+  }
+
+  Future<List<Place>> getPlacesByIds(List<String> placeIds) async {
+    if (placeIds.isEmpty) return [];
+
+    try {
+      final snapshot = await _firestore
+          .collection('places')
+          .where(FieldPath.documentId, whereIn: placeIds)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Place.fromMap(data);
+      }).toList();
+    } catch (e) {
+      print('Error getting places by IDs: $e');
+      return [];
     }
   }
 } 
