@@ -238,16 +238,19 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
             Center(
               child: GestureDetector(
                 onTap: _pickImage,
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: _image != null
-                      ? FileImage(_image!)
-                      : _profileImageUrl != null
-                          ? NetworkImage(_profileImageUrl!)
-                          : const AssetImage('assets/images/profile.png') as ImageProvider,
-                  child: _image != null || _profileImageUrl != null
-                      ? null
-                      : const Icon(Icons.camera_alt, size: 30),
+                child: Hero(
+                  tag: 'profile_avatar',
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage: _image != null
+                        ? FileImage(_image!)
+                        : _profileImageUrl != null
+                            ? NetworkImage(_profileImageUrl!)
+                            : const AssetImage('assets/images/profile.png') as ImageProvider,
+                    child: _image != null || _profileImageUrl != null
+                        ? null
+                        : const Icon(Icons.camera_alt, size: 30),
+                  ),
                 ),
               ),
             ),

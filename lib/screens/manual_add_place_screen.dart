@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
 import 'dart:io';
+import 'package:image_cropper/image_cropper.dart';
 
 class ManualAddPlaceScreen extends StatefulWidget {
   const ManualAddPlaceScreen({super.key});
@@ -42,15 +43,146 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
   bool _hasOutdoorSeating = false;
   SeatingCost _seatingCost = SeatingCost.purchaseRequired;
 
+  final List<String> _thaiProvinces = [
+    'Amnat Charoen',
+    'Ang Thong',
+    'Bangkok',
+    'Bueng Kan',
+    'Buri Ram',
+    'Chachoengsao',
+    'Chai Nat',
+    'Chaiyaphum',
+    'Chanthaburi',
+    'Chiang Mai',
+    'Chiang Rai',
+    'Chonburi',
+    'Chumphon',
+    'Kalasin',
+    'Kamphaeng Phet',
+    'Kanchanaburi',
+    'Khon Kaen',
+    'Krabi',
+    'Lampang',
+    'Lamphun',
+    'Loei',
+    'Lopburi',
+    'Mae Hong Son',
+    'Maha Sarakham',
+    'Mukdahan',
+    'Nakhon Nayok',
+    'Nakhon Pathom',
+    'Nakhon Phanom',
+    'Nakhon Ratchasima (Korat)',
+    'Nakhon Sawan',
+    'Nakhon Si Thammarat',
+    'Nan',
+    'Narathiwat',
+    'Nong Bua Lam Phu',
+    'Nong Khai',
+    'Nonthaburi',
+    'Pathum Thani',
+    'Pattani',
+    'Phang Nga',
+    'Phatthalung',
+    'Phayao',
+    'Phetchabun',
+    'Phetchaburi',
+    'Phichit',
+    'Phitsanulok',
+    'Phrae',
+    'Phuket',
+    'Prachinburi',
+    'Prachuap Khiri Khan',
+    'Ranong',
+    'Ratchaburi',
+    'Rayong',
+    'Roi Et',
+    'Sa Kaeo',
+    'Sakon Nakhon',
+    'Samut Prakan',
+    'Samut Sakhon',
+    'Samut Songkhram',
+    'Saraburi',
+    'Satun',
+    'Sing Buri',
+    'Si Sa Ket',
+    'Songkhla',
+    'Sukhothai',
+    'Suphan Buri',
+    'Surat Thani',
+    'Surin',
+    'Tak',
+    'Trang',
+    'Trat',
+    'Ubon Ratchathani',
+    'Udon Thani',
+    'Uthai Thani',
+    'Uttaradit',
+    'Yala',
+    'Yasothon',
+  ];
+
+  String _selectedCity = 'Bangkok';
+
+  @override
+  void initState() {
+    super.initState();
+    _cityController.text = _selectedCity;
+  }
+
   Future<void> _pickImage() async {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image != null) {
         setState(() {
-          _image = File(image.path);
+          _isLoading = true;
         });
+
+        try {
+          // Step 1: Crop the image
+          final croppedFile = await ImageCropper().cropImage(
+            sourcePath: image.path,
+            aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+            uiSettings: [
+              AndroidUiSettings(
+                toolbarTitle: 'Crop Image',
+                toolbarColor: Colors.deepPurple,
+                toolbarWidgetColor: Colors.white,
+                initAspectRatio: CropAspectRatioPreset.ratio16x9,
+                lockAspectRatio: true,
+              ),
+              IOSUiSettings(
+                title: 'Crop Image',
+                aspectRatioLockEnabled: true,
+                resetAspectRatioEnabled: false,
+                aspectRatioPickerButtonHidden: true,
+              ),
+            ],
+          );
+          
+          if (croppedFile != null) {
+            // Step 2: Compress the cropped image
+            final compressedFile = await _compressImage(File(croppedFile.path));
+            
+            // Step 3: Update the UI with the compressed image
+            setState(() {
+              _image = compressedFile;
+              _isLoading = false;
+            });
+          }
+        } catch (e) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error processing image: $e')),
+          );
+        }
       }
     } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error picking image: $e')),
       );
@@ -62,10 +194,11 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
     final image = img.decodeImage(bytes);
     if (image == null) throw Exception('Could not decode image');
 
+    // Start with a reasonable size
     final resized = img.copyResize(
       image,
-      width: 800,
-      height: 800,
+      width: 1200, // Start with a larger size
+      height: 675, // 16:9 aspect ratio
       maintainAspect: true,
     );
 
@@ -74,7 +207,7 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
     do {
       compressedBytes = img.encodeJpg(resized, quality: quality);
       quality -= 5;
-    } while (compressedBytes.length > 100 * 1024 && quality > 5);
+    } while (compressedBytes.length > 200 * 1024 && quality > 5);
     
     final compressedFile = File(file.path.replaceAll('.jpg', '_compressed.jpg'));
     await compressedFile.writeAsBytes(compressedBytes);
@@ -90,15 +223,12 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
       final user = _auth.currentUser;
       if (user == null) return null;
 
-      final compressedFile = await _compressImage(_image!);
       final storageRef = FirebaseStorage.instance
           .ref()
           .child('place_images')
           .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
 
-      final String extension = compressedFile.path.toLowerCase().split('.').last;
-      final String contentType = extension == 'png' ? 'image/png' : 'image/jpeg';
-      await storageRef.putFile(compressedFile, SettableMetadata(contentType: contentType));
+      await storageRef.putFile(_image!, SettableMetadata(contentType: 'image/jpeg'));
       return await storageRef.getDownloadURL();
     } catch (e) {
       print('Error uploading image: $e');
@@ -248,15 +378,29 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _cityController,
+              DropdownButtonFormField<String>(
+                value: _selectedCity,
                 decoration: const InputDecoration(
                   labelText: 'City',
-                  hintText: 'Enter city (e.g., Bangkok, Chiang Mai)',
+                  hintText: 'Select city',
                 ),
+                items: _thaiProvinces.map((String city) {
+                  return DropdownMenuItem<String>(
+                    value: city,
+                    child: Text(city),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedCity = newValue;
+                      _cityController.text = newValue;
+                    });
+                  }
+                },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a city';
+                    return 'Please select a city';
                   }
                   return null;
                 },
@@ -341,6 +485,15 @@ class _ManualAddPlaceScreenState extends State<ManualAddPlaceScreen> {
               ),
               const SizedBox(height: 16),
               const Text('Duration Rating (minutes)'),
+              const SizedBox(height: 8),
+              Text(
+                'The duration that you feel comfortable sitting or guilty free',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
               Slider(
                 value: _durationRating.toDouble(),
                 min: 30,

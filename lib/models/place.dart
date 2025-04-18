@@ -142,7 +142,7 @@ class Place {
       area: data['area'] ?? '',
       city: data['city'] ?? '',
       type: PlaceType.values.firstWhere(
-        (e) => e.toString() == 'PlaceType.${data['type']}',
+        (e) => e.toString().split('.').last == data['type'],
         orElse: () => PlaceType.cafe,
       ),
       rating: (data['rating'] ?? 0.0).toDouble(),
@@ -154,7 +154,7 @@ class Place {
       description: data['description'] ?? '',
       isOpenNow: data['isOpenNow'] ?? false,
       seatingCost: SeatingCost.values.firstWhere(
-        (e) => e.toString() == 'SeatingCost.${data['seatingCost']}',
+        (e) => e.toString().split('.').last == data['seatingCost'],
         orElse: () => SeatingCost.purchaseRequired,
       ),
       seatingNotes: data['seatingNotes'],

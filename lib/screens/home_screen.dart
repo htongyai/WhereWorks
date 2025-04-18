@@ -132,15 +132,37 @@ class _HomeScreenState extends State<HomeScreen> {
     // Define responsive sizes
     final avatarSize = screenWidth * 0.12;
     final titleSize = screenWidth * 0.05;
-    final subtitleSize = screenWidth * 0.035;
+    final subtitleSize = screenWidth * 0.03;
     final padding = screenWidth * 0.04;
     final spacing = screenHeight * 0.02;
-    final categoryIconSize = screenWidth * 0.08;
-    final categoryTextSize = screenWidth * 0.035;
-    final cardImageHeight = screenHeight * 0.2;
+    final categoryIconSize = screenWidth * 0.06;
+    final categoryTextSize = screenWidth * 0.03;
+    final cardImageHeight = screenHeight * 0.17;
     final cardTitleSize = screenWidth * 0.045;
     final cardSubtitleSize = screenWidth * 0.035;
     final chipTextSize = screenWidth * 0.03;
+
+    if (_isLoading || _profileImageUrl == null) {
+      return Scaffold(
+        resizeToAvoidBottomInset: true,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Loading...',
+                style: TextStyle(
+                  fontSize: titleSize * 0.5,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     // Update the home page content
     _pages[0] = Column(
@@ -201,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   Text(
-                    'Let\'s find a place for you',
+                    'Let\'s find a productive place for you!',
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: subtitleSize,
@@ -339,28 +361,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
 
-    if (_isLoading) {
-      return Scaffold(
-        resizeToAvoidBottomInset: true,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(
-                'Loading...',
-                style: TextStyle(
-                  fontSize: titleSize * 0.5,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
@@ -415,7 +415,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           });
                         },
                         child: Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: Colors.black,
                             borderRadius: BorderRadius.circular(40),
@@ -632,32 +632,28 @@ class PlaceCard extends StatelessWidget {
                 Positioned(
                   top: MediaQuery.of(context).size.height * 0.015,
                   right: MediaQuery.of(context).size.width * 0.03,
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: place.seatingCost == SeatingCost.free
-                              ? Colors.green
-                              : place.seatingCost == SeatingCost.purchaseRequired
-                                  ? Colors.orange
-                                  : Colors.red,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          place.seatingCost == SeatingCost.free
-                              ? 'Free'
-                              : place.seatingCost == SeatingCost.purchaseRequired
-                                  ? 'Purchase Required'
-                                  : 'Paid Entry',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: place.seatingCost == SeatingCost.free
+                          ? Colors.green
+                          : place.seatingCost == SeatingCost.purchaseRequired
+                              ? Colors.orange
+                              : Colors.red,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      place.seatingCost == SeatingCost.free
+                          ? 'Free'
+                          : place.seatingCost == SeatingCost.purchaseRequired
+                              ? 'Purchase Required'
+                              : 'Paid Entry',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -675,6 +671,7 @@ class PlaceCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: titleSize,
                             fontWeight: FontWeight.bold,
+                            color: Colors.black,
                           ),
                         ),
                       ),
@@ -688,6 +685,7 @@ class PlaceCard extends StatelessWidget {
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
+                              color: Colors.black,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -705,6 +703,14 @@ class PlaceCard extends StatelessWidget {
                   SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                   Row(
                     children: [
+                      Text(
+                        place.typeName,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: chipTextSize,
+                        ),
+                      ),
+                      SizedBox(width: MediaQuery.of(context).size.width * 0.02),
                       Icon(
                         Icons.wifi,
                         size: MediaQuery.of(context).size.width * 0.04,
@@ -715,28 +721,28 @@ class PlaceCard extends StatelessWidget {
                         place.hasWifi ? 'WiFi' : 'No WiFi',
                         style: TextStyle(
                           fontSize: chipTextSize,
-                          color: place.hasWifi ? Colors.green : Colors.grey,
+                          color: place.hasWifi ? Colors.green : Colors.grey[600],
                         ),
                       ),
                       SizedBox(width: MediaQuery.of(context).size.width * 0.04),
                       Icon(
                         Icons.location_on,
                         size: MediaQuery.of(context).size.width * 0.04,
-                        color: Colors.grey,
+                        color: Colors.grey[600],
                       ),
                       SizedBox(width: MediaQuery.of(context).size.width * 0.01),
                       Expanded(
                         child: Text(
                           '${place.area}, ${place.city}',
                           style: TextStyle(
-                            color: Colors.grey,
+                            color: Colors.grey[600],
                             fontSize: chipTextSize,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.015),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                   Row(
                     children: [
                       _buildFeatureChip(
@@ -744,6 +750,7 @@ class PlaceCard extends StatelessWidget {
                         icon: Icons.timer,
                         label: '${place.durationRating} min',
                         size: chipTextSize,
+                        color: Colors.grey[800],
                       ),
                       SizedBox(width: MediaQuery.of(context).size.width * 0.02),
                       if (place.seatingLocation.hasIndoor)
@@ -751,7 +758,7 @@ class PlaceCard extends StatelessWidget {
                           context: context,
                           icon: Icons.home,
                           label: 'Indoor',
-                          color: Colors.blue,
+                          color: Colors.grey[800],
                           size: chipTextSize,
                         ),
                       if (place.seatingLocation.hasIndoor && 
@@ -762,7 +769,7 @@ class PlaceCard extends StatelessWidget {
                           context: context,
                           icon: Icons.park,
                           label: 'Outdoor',
-                          color: Colors.blue,
+                          color: Colors.grey[800],
                           size: chipTextSize,
                         ),
                     ],
