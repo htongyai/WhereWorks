@@ -103,38 +103,41 @@ class _AuthScreenState extends State<AuthScreen> {
       String errorMessage;
       switch (e.code) {
         case 'user-not-found':
-          errorMessage = 'No account found with this email. Please sign up.';
+          errorMessage = 'We couldn\'t find an account with this email. Would you like to create one?';
           break;
         case 'wrong-password':
-          errorMessage = 'Incorrect password. Please try again.';
+          errorMessage = 'The password you entered is incorrect. Please try again.';
           break;
         case 'invalid-email':
-          errorMessage = 'Please enter a valid email address.';
+          errorMessage = 'Please enter a valid email address (e.g., yourname@example.com)';
           break;
         case 'email-already-in-use':
-          errorMessage = 'This email is already registered. Please sign in.';
+          errorMessage = 'This email is already registered. Please sign in instead.';
           break;
         case 'weak-password':
-          errorMessage = 'Password is too weak. Please use a stronger password.';
+          errorMessage = 'Your password is too weak. Please use at least 6 characters with a mix of letters and numbers.';
           break;
         case 'network-request-failed':
-          errorMessage = 'Network error. Please check your internet connection.';
+          errorMessage = 'Unable to connect to the internet. Please check your connection and try again.';
           break;
         case 'too-many-requests':
-          errorMessage = 'Too many attempts. Please try again later.';
+          errorMessage = 'Too many attempts. Please wait a few minutes before trying again.';
           break;
         case 'user-disabled':
-          errorMessage = 'This account has been disabled. Please contact support.';
+          errorMessage = 'This account has been deactivated. Please contact support for assistance.';
+          break;
+        case 'operation-not-allowed':
+          errorMessage = 'This type of account is not allowed. Please try a different sign-in method.';
           break;
         default:
-          errorMessage = e.message ?? 'An error occurred. Please try again.';
+          errorMessage = 'Something went wrong. Please try again later.';
       }
       setState(() {
         _errorMessage = errorMessage;
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
+        _errorMessage = 'An unexpected error occurred. Please try again or contact support if the problem persists.';
       });
     } finally {
       if (mounted) {

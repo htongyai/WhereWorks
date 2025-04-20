@@ -95,17 +95,24 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: ColorScheme.dark(
-      primary: primaryColor,
-      secondary: accentColor,
-      surface: const Color(0xFF1A1A1A),
-      background: const Color(0xFF121212),
+      primary: const Color(0xFFFFA726),
+      secondary: const Color(0xFFFFB74D),
+      surface: const Color(0xFF121212),
+      background: const Color(0xFF000000),
+      onSurface: Colors.white,
+      onBackground: Colors.white,
+      onPrimary: Colors.black,
+      onSecondary: Colors.black,
     ),
-    appBarTheme: AppBarTheme(
-      backgroundColor: const Color(0xFF1A1A1A),
+    scaffoldBackgroundColor: const Color(0xFF000000),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF121212),
+      foregroundColor: Colors.white,
       elevation: 0,
     ),
     cardTheme: CardTheme(
       elevation: 2,
+      color: const Color(0xFF1A1A1A),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -114,10 +121,11 @@ class AppTheme {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
+      tileColor: const Color(0xFF1A1A1A),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color(0xFF2A2A2A),
+      fillColor: const Color(0xFF1A1A1A),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -128,7 +136,7 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: primaryColor),
+        borderSide: const BorderSide(color: Color(0xFFFFA726)),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -146,8 +154,8 @@ class AppTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFFA726),
+        foregroundColor: Colors.black,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -157,21 +165,21 @@ class AppTheme {
         ),
       ),
     ),
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: primaryColor,
-      foregroundColor: Colors.white,
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: Color(0xFFFFA726),
+      foregroundColor: Colors.black,
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: primaryColor,
+        foregroundColor: const Color(0xFFFFA726),
       ),
     ),
-    iconTheme: IconThemeData(
-      color: primaryColor,
+    iconTheme: const IconThemeData(
+      color: Color(0xFFFFA726),
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: primaryColor.withOpacity(0.1),
-      selectedColor: primaryColor,
+      backgroundColor: const Color(0xFFFFA726).withOpacity(0.1),
+      selectedColor: const Color(0xFFFFA726),
       labelStyle: const TextStyle(color: Colors.white),
     ),
   );

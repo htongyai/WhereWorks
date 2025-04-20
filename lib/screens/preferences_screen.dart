@@ -15,29 +15,50 @@ class PreferencesScreen extends StatefulWidget {
 }
 
 class _PreferencesScreenState extends State<PreferencesScreen> {
-  bool _isDarkMode = false;
-  final _prefs = SharedPreferences.getInstance();
+  // bool _isDarkMode = false;
+  // final _prefs = SharedPreferences.getInstance();
 
-  @override
-  void initState() {
-    super.initState();
-    _loadThemePreference();
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _loadThemePreference();
+  // }
 
-  Future<void> _loadThemePreference() async {
-    final prefs = await _prefs;
-    setState(() {
-      _isDarkMode = prefs.getBool('isDarkMode') ?? false;
-    });
-  }
+  // Future<void> _loadThemePreference() async {
+  //   final prefs = await _prefs;
+  //   setState(() {
+  //     _isDarkMode = prefs.getBool('isDarkMode') ?? false;
+  //   });
+  // }
 
-  Future<void> _toggleTheme() async {
-    final prefs = await _prefs;
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-      prefs.setBool('isDarkMode', _isDarkMode);
-    });
-  }
+  // Future<void> _toggleTheme() async {
+  //   final prefs = await _prefs;
+  //   setState(() {
+  //     _isDarkMode = !_isDarkMode;
+  //     prefs.setBool('isDarkMode', _isDarkMode);
+  //   });
+
+  //   if (mounted) {
+  //     final result = await showDialog<bool>(
+  //       context: context,
+  //       builder: (context) => AlertDialog(
+  //         title: const Text('Theme Changed'),
+  //         content: const Text('The app needs to restart to apply the theme changes.'),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.pop(context, true),
+  //             child: const Text('Restart'),
+  //           ),
+  //         ],
+  //       ),
+  //     );
+
+  //     if (result == true && mounted) {
+  //       // Restart the app
+  //       Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -60,8 +81,13 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 _buildListTile(
                   leading: Hero(
                     tag: 'profile_avatar',
-                    child: const CircleAvatar(
-                      child: Icon(Icons.person),
+                    child: CircleAvatar(
+                      backgroundColor: const Color(0xFF90C8AC),
+                      child: CircleAvatar(
+                        radius: 20,
+                        backgroundImage: const AssetImage('assets/images/profile.png'),
+                        child: const Icon(Icons.person),
+                      ),
                     ),
                   ),
                   title: 'Profile',
@@ -79,24 +105,24 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             ),
 
             // App Settings Section
-            _buildSection(
-              title: 'App Settings',
-              children: [
-                _buildListTile(
-                  leading: Icon(
-                    _isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                    color: theme.colorScheme.primary,
-                  ),
-                  title: 'Theme',
-                  subtitle: _isDarkMode ? 'Dark Mode' : 'Light Mode',
-                  trailing: Switch(
-                    value: _isDarkMode,
-                    onChanged: (value) => _toggleTheme(),
-                    activeColor: theme.colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
+            // _buildSection(
+            //   title: 'App Settings',
+            //   children: [
+            //     _buildListTile(
+            //       leading: Icon(
+            //         _isDarkMode ? Icons.dark_mode : Icons.light_mode,
+            //         color: theme.colorScheme.primary,
+            //       ),
+            //       title: 'Theme',
+            //       subtitle: _isDarkMode ? 'Dark Mode' : 'Light Mode',
+            //       trailing: Switch(
+            //         value: _isDarkMode,
+            //         onChanged: (value) => _toggleTheme(),
+            //         activeColor: theme.colorScheme.primary,
+            //       ),
+            //     ),
+            //   ],
+            // ),
 
             // Legal Section
             _buildSection(

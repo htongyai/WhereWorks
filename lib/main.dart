@@ -58,6 +58,15 @@ class _MyAppState extends State<MyApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: const SplashScreen(),
+      navigatorKey: GlobalKey<NavigatorState>(),
+      onGenerateRoute: (settings) {
+        if (settings.name == '/') {
+          return MaterialPageRoute(
+            builder: (context) => const SplashScreen(),
+          );
+        }
+        return null;
+      },
     );
   }
 }

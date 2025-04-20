@@ -64,21 +64,46 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
   }
 
   Future<void> _loadSavedPlaces() async {
+    print('Loading saved places...');
     setState(() {
       _isLoading = true;
     });
 
     try {
       final user = _auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        print('No user logged in');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+      print('User ID: ${user.uid}');
+
+      // Check if user document exists
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      print('User document exists: ${userDoc.exists}');
+      
+      // Check saved places subcollection
+      final savedPlacesSnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('saved_places')
+          .get();
+      print('Number of saved places in subcollection: ${savedPlacesSnapshot.docs.length}');
+      print('Saved place IDs: ${savedPlacesSnapshot.docs.map((doc) => doc.id).toList()}');
 
       final places = await _placeService.getSavedPlaces(user.uid);
+      print('Retrieved ${places.length} saved places from service');
+      
       setState(() {
         _savedPlaces = places;
         _filteredPlaces = places;
         _isLoading = false;
       });
     } catch (e) {
+      print('Error loading saved places: $e');
+      print('Stack trace: ${StackTrace.current}');
       setState(() {
         _isLoading = false;
       });
@@ -137,27 +162,8 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search Places / Area',
+              hintText: 'Search from your saved list',
               prefixIcon: const Icon(Icons.search),
-              suffixIcon: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _searchController.clear();
-                    _filterPlaces();
-                  });
-                },
-                child: Container(
-                  margin: EdgeInsets.all(spacing),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[900],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -225,6 +231,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
                         titleSize: cardTitleSize,
                         subtitleSize: cardSubtitleSize,
                         chipTextSize: chipTextSize,
+                        userId: _auth.currentUser?.uid ?? 'anonymous',
                       );
                     },
                   ),

@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'saved_places_screen.dart';
+import 'home_screen.dart';
 
 class PlaceDetailsScreen extends StatefulWidget {
   final Place place;
@@ -27,6 +28,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   void initState() {
     super.initState();
     print('PlaceDetailsScreen initialized with place: ${widget.place.id}');
+    print('Place data: ${widget.place.toMap()}');
+    _isLoading = false;
     _checkIfSaved();
     _loadUserRating();
   }
@@ -105,17 +108,15 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_isSaved ? 'Place saved!' : 'Place unsaved'),
-          action: SnackBarAction(
-            label: 'View Saved',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SavedPlacesScreen(),
-                ),
-              );
-            },
-          ),
+          // action: SnackBarAction(
+          //   label: 'View Saved',
+          //   onPressed: () {
+          //     // Find the HomeScreen ancestor and change its current index
+          //     context.findAncestorStateOfType<HomeScreenState>()?.setState(() {
+          //       context.findAncestorStateOfType<HomeScreenState>()?.currentIndex = 1;
+          //     });
+          //   },
+          // ),
         ),
       );
     } catch (e) {
@@ -224,6 +225,210 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     );
   }
 
+  Widget _buildFeaturesSection() {
+    final features = <Widget>[];
+    
+    // Add duration rating
+    features.add(
+      ListTile(
+        leading: const Icon(Icons.access_time),
+        title: const Text('Duration'),
+        subtitle: Text('${widget.place.durationRating} minutes'),
+      ),
+    );
+
+    // Add WiFi status
+    if (widget.place.hasWifi) {
+      features.add(
+        ListTile(
+          leading: const Icon(Icons.wifi),
+          title: const Text('WiFi Available'),
+        ),
+      );
+    }
+
+    // Add pet-friendly status
+    if (widget.place.isPetFriendly) {
+      features.add(
+        ListTile(
+          leading: const Icon(Icons.pets),
+          title: const Text('Pet Friendly'),
+        ),
+      );
+    }
+
+    // Add working friendly status
+    if (widget.place.isWorkingFriendly) {
+      features.add(
+        ListTile(
+          leading: const Icon(Icons.computer),
+          title: const Text('Working Friendly'),
+        ),
+      );
+    }
+
+    // Add reading friendly status
+    if (widget.place.isReadingFriendly) {
+      features.add(
+        ListTile(
+          leading: const Icon(Icons.menu_book),
+          title: const Text('Reading Friendly'),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Text(
+            'Features',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        ...features,
+      ],
+    );
+  }
+
+  Widget _buildHoursSection() {
+    final now = DateTime.now();
+    final currentDay = now.weekday - 1; // Convert to 0-6 range (0 = Monday)
+    final isTodayClosed = widget.place.closingDays != null && 
+                         widget.place.closingDays!.isNotEmpty && 
+                         widget.place.closingDays!.contains(currentDay);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Hours',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (widget.place.is24Hours)
+          Row(
+            children: [
+              Icon(Icons.schedule, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 8),
+              const Text('Open 24 Hours'),
+            ],
+          )
+        else if (isTodayClosed)
+          Row(
+            children: [
+              Icon(Icons.event_busy, color: Colors.red),
+              const SizedBox(width: 8),
+              const Text('Closed Today'),
+            ],
+          )
+        else if (widget.place.weekdayHours != null && currentDay < 5)
+          Row(
+            children: [
+              Icon(Icons.schedule, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 8),
+              Text(
+                'Today: ${widget.place.weekdayHours!['opening']} - ${widget.place.weekdayHours!['closing']}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          )
+        else if (widget.place.weekendHours != null && currentDay >= 5)
+          Row(
+            children: [
+              Icon(Icons.schedule, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 8),
+              Text(
+                'Today: ${widget.place.weekendHours!['opening']} - ${widget.place.weekendHours!['closing']}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        if (!widget.place.is24Hours) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.calendar_today, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 8),
+              const Text('Weekday Hours'),
+              const Spacer(),
+              Text(
+                widget.place.weekdayHours != null
+                    ? '${widget.place.weekdayHours!['opening']} - ${widget.place.weekdayHours!['closing']}'
+                    : 'N/A',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.calendar_today, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 8),
+              const Text('Weekend Hours'),
+              const Spacer(),
+              Text(
+                widget.place.weekendHours != null
+                    ? '${widget.place.weekendHours!['opening']} - ${widget.place.weekendHours!['closing']}'
+                    : 'N/A',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ],
+        if (widget.place.closingDays != null && widget.place.closingDays!.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.event_busy, color: Theme.of(context).primaryColor),
+                  const SizedBox(width: 8),
+                  const Text('Closing Days'),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: List.generate(7, (index) {
+                  final isClosed = widget.place.closingDays!.contains(index);
+                  return Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isClosed ? Colors.red.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                      border: Border.all(
+                        color: isClosed ? Colors.red : Colors.grey,
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        ['S', 'M', 'T', 'W', 'T', 'F', 'S'][index],
+                        style: TextStyle(
+                          color: isClosed ? Colors.red : Colors.grey,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -244,7 +449,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                 pinned: true,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Hero(
-                    tag: 'place_image_${widget.place.id}',
+                    tag: 'place_image_${widget.place.id}_${_auth.currentUser?.uid ?? 'anonymous'}',
                     child: CachedNetworkImage(
                       imageUrl: widget.place.imageUrl,
                       fit: BoxFit.cover,
@@ -403,6 +608,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                                 height: 1.5,
                               ),
                             ),
+                            const SizedBox(height: 16),
+                            _buildHoursSection(),
                           ],
                         ),
                       ),
@@ -436,7 +643,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                                 ),
                               ],
                             ),
-                            if (widget.place.hasWifi) Divider(height: 24, color: Colors.grey[200]),
+                            Divider(height: 24, color: Colors.grey[200]),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [

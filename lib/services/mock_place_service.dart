@@ -112,7 +112,7 @@ class MockPlaceService {
       isOpenNow: true,
       priceLevel: 1,
       seatingCost: SeatingCost.free,
-      seatingNotes: 'Public space with no purchase required',
+      seatingNotes: 'Public space with no purchase advised',
       seatingLocation: const SeatingLocation(
         hasIndoor: false,
         hasOutdoor: true,
@@ -199,6 +199,7 @@ class MockPlaceService {
       durationRating: placeData['durationRating'] ?? 60,
       isWorkingFriendly: placeData['isWorkingFriendly'] ?? false,
       isReadingFriendly: placeData['isReadingFriendly'] ?? false,
+      hasWifi: placeData['hasWifi'] ?? false,
       imageUrl: placeData['imageUrl'],
       description: placeData['description'] ?? '',
       isOpenNow: placeData['isOpenNow'] ?? false,

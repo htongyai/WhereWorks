@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
 import 'package:image/image.dart' as img;
+import 'package:flutter/services.dart';
 
 class ProfileUploadScreen extends StatefulWidget {
   const ProfileUploadScreen({super.key});
@@ -136,119 +137,128 @@ class _ProfileUploadScreenState extends State<ProfileUploadScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.black,
+          statusBarIconBrightness: Brightness.light,
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Choose a profile picture',
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.06,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.02),
-                Text(
-                  'This will be visible to other users',
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.04,
-                    color: Colors.grey[600],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: screenHeight * 0.05),
-                GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    width: screenWidth * 0.5,
-                    height: screenWidth * 0.5,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.grey[200],
-                      image: _image != null
-                          ? DecorationImage(
-                              image: FileImage(_image!),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                      border: Border.all(
-                        color: Colors.grey[300]!,
-                        width: 2,
-                      ),
+      body: Stack(
+        children: [
+          Positioned(
+            top: screenHeight * 0.08,
+            left: 0,
+            right: 0,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    'Choose a profile picture',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.06,
+                      fontWeight: FontWeight.bold,
                     ),
-                    child: _image == null
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.add_a_photo,
-                                size: screenWidth * 0.15,
-                                color: Colors.grey[400],
-                              ),
-                              SizedBox(height: screenHeight * 0.02),
-                              Text(
-                                'Tap to add photo',
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.04,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          )
-                        : null,
                   ),
-                ),
-                SizedBox(height: screenHeight * 0.05),
-                if (_image != null)
-                  Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _uploadImage,
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(
-                              vertical: screenHeight * 0.02,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : const Text('Save Profile Picture'),
+                  SizedBox(height: screenHeight * 0.02),
+                  Text(
+                    'This will be visible to other users',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: screenHeight * 0.05),
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: Container(
+                      width: screenWidth * 0.5,
+                      height: screenWidth * 0.5,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.grey[200],
+                        image: _image != null
+                            ? DecorationImage(
+                                image: FileImage(_image!),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                        border: Border.all(
+                          color: Colors.grey[300]!,
+                          width: 2,
                         ),
                       ),
-                      SizedBox(height: screenHeight * 0.02),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _image = null;
-                          });
-                        },
-                        child: const Text('Choose Different Photo'),
-                      ),
-                    ],
+                      child: _image == null
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_a_photo,
+                                  size: screenWidth * 0.15,
+                                  color: Colors.grey[400],
+                                ),
+                                SizedBox(height: screenHeight * 0.02),
+                                Text(
+                                  'Tap to add photo',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.04,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : null,
+                    ),
                   ),
-              ],
+                  SizedBox(height: screenHeight * 0.05),
+                  if (_image != null)
+                    Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _uploadImage,
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                vertical: screenHeight * 0.02,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text('Save Profile Picture'),
+                          ),
+                        ),
+                        SizedBox(height: screenHeight * 0.02),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _image = null;
+                            });
+                          },
+                          child: const Text('Choose Different Photo'),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

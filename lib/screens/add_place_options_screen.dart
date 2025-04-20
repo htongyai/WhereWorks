@@ -31,18 +31,11 @@ class AddPlaceOptionsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             ListTile(
-              leading: const Icon(Icons.search, size: 32),
-              title: const Text('Search on Google Maps'),
-              subtitle: const Text('Find and select a place from Google Maps'),
-              onTap: () {
-                Navigator.pop(context);
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //     builder: (context) => const GoogleMapsSearchScreen(),
-                //   ),
-              //  );
-              },
+              leading: const Icon(Icons.search, size: 32, color: Colors.grey),
+              title: const Text('Search on Google Maps', style: TextStyle(color: Colors.grey)),
+              subtitle: const Text('Find and select a place from Google Maps', style: TextStyle(color: Colors.grey)),
+              enabled: false,
+              onTap: null,
             ),
             const Divider(),
             ListTile(

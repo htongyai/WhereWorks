@@ -410,6 +410,7 @@ class _FilterOptionsScreenState extends State<FilterOptionsScreen> {
                     'maxDuration': _durationRange.end.round(),
                     'minPrice': _priceRange.start.round(),
                     'maxPrice': _priceRange.end.round(),
+                    'isCurrentlyOpen': _isOpenNow == true,
                   });
                 },
                 style: ElevatedButton.styleFrom(
@@ -424,5 +425,26 @@ class _FilterOptionsScreenState extends State<FilterOptionsScreen> {
         ),
       ),
     );
+  }
+
+  String _getSeatingCostLabel(int cost) {
+    String label;
+    switch (cost) {
+      case 0:
+        label = 'Free';
+        break;
+      case 1:
+        label = 'Purchase Advised';
+        break;
+      case 2:
+        label = 'Purchase Expected';
+        break;
+      case 3:
+        label = 'Purchase Required';
+        break;
+      default:
+        label = 'Unknown';
+    }
+    return label;
   }
 } 

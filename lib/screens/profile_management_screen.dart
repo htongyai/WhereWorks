@@ -242,14 +242,18 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                   tag: 'profile_avatar',
                   child: CircleAvatar(
                     radius: 50,
-                    backgroundImage: _image != null
-                        ? FileImage(_image!)
-                        : _profileImageUrl != null
-                            ? NetworkImage(_profileImageUrl!)
-                            : const AssetImage('assets/images/profile.png') as ImageProvider,
-                    child: _image != null || _profileImageUrl != null
-                        ? null
-                        : const Icon(Icons.camera_alt, size: 30),
+                    backgroundColor: const Color(0xFF90C8AC),
+                    child: CircleAvatar(
+                      radius: 48,
+                      backgroundImage: _image != null
+                          ? FileImage(_image!)
+                          : _profileImageUrl != null
+                              ? NetworkImage(_profileImageUrl!)
+                              : const AssetImage('assets/images/profile.png') as ImageProvider,
+                      child: _image != null || _profileImageUrl != null
+                          ? null
+                          : const Icon(Icons.camera_alt, size: 30),
+                    ),
                   ),
                 ),
               ),

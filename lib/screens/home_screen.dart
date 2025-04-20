@@ -17,10 +17,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   final _placeService = FirebasePlaceService();
   final _authService = AuthService();
   final _searchController = TextEditingController();
@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   PlaceType? _selectedCategory;
   String _searchQuery = '';
-  int _currentIndex = 0;
+  int currentIndex = 0;
 
   final Map<int, Widget> _pages = {
     0: Column(
@@ -46,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _isLoading = false; // Set loading to false immediately
     _loadData();
     _searchController.addListener(_onSearchChanged);
   }
@@ -142,28 +143,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final cardSubtitleSize = screenWidth * 0.035;
     final chipTextSize = screenWidth * 0.03;
 
-    if (_isLoading || _profileImageUrl == null) {
-      return Scaffold(
-        resizeToAvoidBottomInset: true,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(
-                'Loading...',
-                style: TextStyle(
-                  fontSize: titleSize * 0.5,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     // Update the home page content
     _pages[0] = Column(
       children: [
@@ -190,22 +169,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: avatarSize * 1,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    image: DecorationImage(
-                      image: NetworkImage(
-                        _profileImageUrl!,
-                      ),
-                      fit: BoxFit.cover,
-                      onError: (exception, stackTrace) => const Icon(
-                        Icons.person,
-                        color: Colors.white,
-                      ),
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 3,
                     ),
+                    image: _profileImageUrl != null
+                        ? DecorationImage(
+                            image: NetworkImage(_profileImageUrl!),
+                            fit: BoxFit.cover,
+                            onError: (exception, stackTrace) => null,
+                          )
+                        : null,
+                    color: _profileImageUrl == null ? Colors.black : null,
                   ),
-                  child: _profileImageUrl == null
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  child: _profileImageUrl == null && _userName != null
+                      ? Center(
+                          child: Text(
+                            _userName!.substring(0, 1).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: avatarSize * 0.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         )
                       : null,
@@ -330,32 +315,62 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: _refreshPlaces,
-            child: ListView.builder(
-              padding: EdgeInsets.only(
-                left: padding,
-                right: padding,
-                top: padding,
-                bottom: size.height * 0.1,
-              ),
-              itemCount: _filteredPlaces.length,
-              itemBuilder: (context, index) {
-                return PlaceCard(
-                  place: _filteredPlaces[index],
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PlaceDetailsScreen(place: _filteredPlaces[index]),
-                      ),
-                    );
-                  },
-                  imageHeight: cardImageHeight,
-                  titleSize: cardTitleSize,
-                  subtitleSize: cardSubtitleSize,
-                  chipTextSize: chipTextSize,
-                );
-              },
-            ),
+            child: _places.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.location_off,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No places found',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Try adding a new place',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: EdgeInsets.only(
+                      left: padding,
+                      right: padding,
+                      top: padding,
+                      bottom: size.height * 0.1,
+                    ),
+                    itemCount: _filteredPlaces.length,
+                    itemBuilder: (context, index) {
+                      return PlaceCard(
+                        place: _filteredPlaces[index],
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PlaceDetailsScreen(place: _filteredPlaces[index]),
+                            ),
+                          );
+                        },
+                        imageHeight: cardImageHeight,
+                        titleSize: cardTitleSize,
+                        subtitleSize: cardSubtitleSize,
+                        chipTextSize: chipTextSize,
+                        userId: _authService.currentUser?.uid ?? 'anonymous',
+                      );
+                    },
+                  ),
           ),
         ),
       ],
@@ -372,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
             alignment: Alignment.center,
             children: [
               IndexedStack(
-                index: _currentIndex,
+                index: currentIndex,
                 children: _pages.values.toList(),
               ),
               Positioned(
@@ -439,9 +454,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
-    final isSelected = _currentIndex == index;
+    final isSelected = currentIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () => setState(() => currentIndex = index),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
@@ -511,11 +526,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (result != null) {
-      setState(() {
-        _selectedCategory = result['type'];
-        // TODO: Apply other filters
-      });
-      _loadData();
+      print('Received filter result: $result');
+      
+      try {
+        final filteredPlaces = await _placeService.getFilteredPlaces(result);
+        print('Filtered places count: ${filteredPlaces.length}');
+        
+        setState(() {
+          _places = filteredPlaces;
+          _filteredPlaces = filteredPlaces;
+          _selectedCategory = null; // Reset category filter when applying new filters
+        });
+      } catch (e) {
+        print('Error applying filters: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error applying filters: $e')),
+          );
+        }
+      }
     }
   }
 
@@ -575,6 +604,7 @@ class PlaceCard extends StatelessWidget {
   final double titleSize;
   final double subtitleSize;
   final double chipTextSize;
+  final String userId;
 
   const PlaceCard({
     Key? key,
@@ -584,6 +614,7 @@ class PlaceCard extends StatelessWidget {
     required this.titleSize,
     required this.subtitleSize,
     required this.chipTextSize,
+    required this.userId,
   }) : super(key: key);
 
   @override
@@ -604,7 +635,7 @@ class PlaceCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: Hero(
-                    tag: 'place_image_${place.id}',
+                    tag: 'place_image_${place.id}_$userId',
                     child: CachedNetworkImage(
                       imageUrl: place.imageUrl,
                       height: imageHeight,
@@ -703,6 +734,36 @@ class PlaceCard extends StatelessWidget {
                   SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                   Row(
                     children: [
+                      Icon(
+                        Icons.access_time,
+                        size: MediaQuery.of(context).size.width * 0.04,
+                        color: Colors.grey[600],
+                      ),
+                      SizedBox(width: MediaQuery.of(context).size.width * 0.01),
+                      Text(
+                        place.is24Hours ? 'Open 24 Hours' : 
+                        place.currentDayHours == 'Closed Today' ? 'Closed Today' :
+                        'Open ${place.currentDayHours}',
+                        style: TextStyle(
+                          fontSize: chipTextSize,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                  Row(
+                    children: [
+                      Icon(
+                        place.type == PlaceType.restaurant ? Icons.restaurant :
+                        place.type == PlaceType.cafe ? Icons.coffee :
+                        place.type == PlaceType.gym ? Icons.fitness_center :
+                        place.type == PlaceType.coworkingSpace ? Icons.business :
+                        Icons.park,
+                        size: MediaQuery.of(context).size.width * 0.04,
+                        color: Colors.grey[600],
+                      ),
+                      SizedBox(width: MediaQuery.of(context).size.width * 0.01),
                       Text(
                         place.typeName,
                         style: TextStyle(
@@ -710,7 +771,7 @@ class PlaceCard extends StatelessWidget {
                           fontSize: chipTextSize,
                         ),
                       ),
-                      SizedBox(width: MediaQuery.of(context).size.width * 0.02),
+                      SizedBox(width: MediaQuery.of(context).size.width * 0.04),
                       Icon(
                         Icons.wifi,
                         size: MediaQuery.of(context).size.width * 0.04,
@@ -724,7 +785,11 @@ class PlaceCard extends StatelessWidget {
                           color: place.hasWifi ? Colors.green : Colors.grey[600],
                         ),
                       ),
-                      SizedBox(width: MediaQuery.of(context).size.width * 0.04),
+                    ],
+                  ),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                  Row(
+                    children: [
                       Icon(
                         Icons.location_on,
                         size: MediaQuery.of(context).size.width * 0.04,

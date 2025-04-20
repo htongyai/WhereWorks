@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 enum PlaceType {
   restaurant,
@@ -64,33 +65,47 @@ class Place {
   final String? seatingNotes;
   final int priceLevel;
   final SeatingLocation seatingLocation;
+  final String? openingTime;
+  final String? closingTime;
+  final bool is24Hours;
+  final bool isPetFriendly;
+  final Map<String, String>? weekdayHours;
+  final Map<String, String>? weekendHours;
+  final List<int>? closingDays;
 
-  Place({
+  const Place({
     required this.id,
     required this.name,
     required this.area,
     required this.city,
+    required this.description,
+    required this.imageUrl,
     required this.type,
     required this.rating,
     required this.durationRating,
     required this.isWorkingFriendly,
     required this.isReadingFriendly,
-    this.hasWifi = false,
-    required this.imageUrl,
-    required this.description,
+    required this.hasWifi,
     required this.isOpenNow,
-    this.seatingCost = SeatingCost.purchaseRequired,
-    this.seatingNotes,
     required this.priceLevel,
     required this.seatingLocation,
+    required this.seatingCost,
+    this.seatingNotes,
+    this.openingTime,
+    this.closingTime,
+    this.is24Hours = false,
+    this.isPetFriendly = false,
+    this.weekdayHours,
+    this.weekendHours,
+    this.closingDays,
   }) : assert(priceLevel >= 1 && priceLevel <= 4, 'Price level must be between 1 and 4');
 
   String get seatingCostText {
     switch (seatingCost) {
       case SeatingCost.free:
-        return 'Free Seating';
+        return 'Free';
       case SeatingCost.purchaseRequired:
-        return 'Purchase Required';
+        return 'Purchase Advised';
       case SeatingCost.paid:
         return 'Paid Seating';
     }
@@ -135,34 +150,44 @@ class Place {
   }
 
   factory Place.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>;
     return Place(
       id: doc.id,
-      name: data['name'] ?? '',
-      area: data['area'] ?? '',
-      city: data['city'] ?? '',
+      name: data['name'] as String? ?? '',
+      area: data['area'] as String? ?? '',
+      city: data['city'] as String? ?? '',
+      description: data['description'] as String? ?? '',
+      imageUrl: data['imageUrl'] as String? ?? '',
       type: PlaceType.values.firstWhere(
         (e) => e.toString().split('.').last == data['type'],
         orElse: () => PlaceType.cafe,
       ),
-      rating: (data['rating'] ?? 0.0).toDouble(),
-      durationRating: data['durationRating'] ?? 60,
-      isWorkingFriendly: data['isWorkingFriendly'] ?? false,
-      isReadingFriendly: data['isReadingFriendly'] ?? false,
-      hasWifi: data['hasWifi'] ?? false,
-      imageUrl: data['imageUrl'] ?? '',
-      description: data['description'] ?? '',
-      isOpenNow: data['isOpenNow'] ?? false,
+      rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
+      durationRating: data['durationRating'] as int? ?? 60,
+      isWorkingFriendly: data['isWorkingFriendly'] as bool? ?? false,
+      isReadingFriendly: data['isReadingFriendly'] as bool? ?? false,
+      hasWifi: data['hasWifi'] as bool? ?? false,
+      isOpenNow: data['isOpenNow'] as bool? ?? true,
+      priceLevel: data['priceLevel'] as int? ?? 1,
+      seatingNotes: data['seatingNotes'] as String?,
+      seatingLocation: SeatingLocation.fromMap(data['seatingLocation'] as Map<String, dynamic>? ?? {}),
       seatingCost: SeatingCost.values.firstWhere(
         (e) => e.toString().split('.').last == data['seatingCost'],
         orElse: () => SeatingCost.purchaseRequired,
       ),
-      seatingNotes: data['seatingNotes'],
-      priceLevel: data['priceLevel'] ?? 1,
-      seatingLocation: SeatingLocation.fromMap(
-        (data['seatingLocation'] as Map<String, dynamic>?) ?? 
-        {'hasIndoor': false, 'hasOutdoor': false}
-      ),
+      openingTime: data['openingTime'] as String?,
+      closingTime: data['closingTime'] as String?,
+      is24Hours: data['is24Hours'] as bool? ?? false,
+      isPetFriendly: data['isPetFriendly'] as bool? ?? false,
+      weekdayHours: data['weekdayHours'] != null 
+          ? Map<String, String>.from(data['weekdayHours'] as Map)
+          : null,
+      weekendHours: data['weekendHours'] != null 
+          ? Map<String, String>.from(data['weekendHours'] as Map)
+          : null,
+      closingDays: data['closingDays'] != null
+          ? (data['closingDays'] as List).map((e) => e as int).toList()
+          : null,
     );
   }
 
@@ -184,17 +209,17 @@ class Place {
       'seatingNotes': seatingNotes,
       'priceLevel': priceLevel,
       'seatingLocation': seatingLocation.toMap(),
+      'openingTime': openingTime,
+      'closingTime': closingTime,
+      'is24Hours': is24Hours,
+      'isPetFriendly': isPetFriendly,
+      'weekdayHours': weekdayHours,
+      'weekendHours': weekendHours,
+      'closingDays': closingDays,
     };
   }
 
-  factory Place.fromMap(Map<String, dynamic> map) {
-    print('Creating Place from map: $map'); // Debug log
-    
-    final id = map['id'] as String?;
-    if (id == null || id.isEmpty) {
-      print('Warning: Place created with empty ID. Map: $map');
-    }
-    
+  factory Place.fromMap(Map<String, dynamic> map, {String? id}) {
     return Place(
       id: id ?? '',
       name: map['name'] as String? ?? '',
@@ -215,6 +240,17 @@ class Place {
       priceLevel: map['priceLevel'] as int? ?? 1,
       seatingNotes: map['seatingNotes'] as String?,
       seatingLocation: SeatingLocation.fromMap(map['seatingLocation'] as Map<String, dynamic>? ?? {}),
+      seatingCost: SeatingCost.values.firstWhere(
+        (e) => e.toString().split('.').last == map['seatingCost'],
+        orElse: () => SeatingCost.purchaseRequired,
+      ),
+      openingTime: map['openingTime'] as String?,
+      closingTime: map['closingTime'] as String?,
+      is24Hours: map['is24Hours'] as bool? ?? false,
+      isPetFriendly: map['isPetFriendly'] as bool? ?? false,
+      weekdayHours: map['weekdayHours'] as Map<String, String>?,
+      weekendHours: map['weekendHours'] as Map<String, String>?,
+      closingDays: map['closingDays'] as List<int>?,
     );
   }
 
@@ -236,6 +272,74 @@ class Place {
       'priceLevel': priceLevel,
       'seatingNotes': seatingNotes,
       'seatingLocation': seatingLocation.toMap(),
+      'seatingCost': seatingCost.toString().split('.').last,
+      'openingTime': openingTime,
+      'closingTime': closingTime,
+      'is24Hours': is24Hours,
+      'isPetFriendly': isPetFriendly,
+      'weekdayHours': weekdayHours,
+      'weekendHours': weekendHours,
+      'closingDays': closingDays,
     };
+  }
+
+  bool get isCurrentlyOpen {
+    if (is24Hours) return true;
+    
+    final now = DateTime.now();
+    final currentTime = TimeOfDay(hour: now.hour, minute: now.minute);
+    final currentDay = now.weekday - 1; // 0 = Sunday, 6 = Saturday
+    
+    // Check if it's a closing day
+    if (closingDays != null && closingDays!.contains(currentDay)) {
+      return false;
+    }
+    
+    // Check if it's weekend (Saturday or Sunday)
+    final isWeekend = currentDay == 6 || currentDay == 0;
+    final hours = isWeekend ? weekendHours : weekdayHours;
+    
+    if (hours == null) return false;
+    
+    final openingTime = _parseTimeOfDay(hours['opening']!);
+    final closingTime = _parseTimeOfDay(hours['closing']!);
+    
+    if (openingTime == null || closingTime == null) return false;
+    
+    // Handle cases where closing time is the next day
+    if (closingTime.hour < openingTime.hour) {
+      return currentTime.hour >= openingTime.hour || currentTime.hour < closingTime.hour;
+    }
+    
+    return currentTime.hour >= openingTime.hour && currentTime.hour < closingTime.hour;
+  }
+  
+  TimeOfDay? _parseTimeOfDay(String timeStr) {
+    try {
+      final parts = timeStr.split(':');
+      return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  String get currentDayHours {
+    if (is24Hours) return 'Open 24 Hours';
+    
+    final now = DateTime.now();
+    final currentDay = now.weekday - 1; // 0 = Sunday, 6 = Saturday
+    
+    // Check if it's a closing day
+    if (closingDays != null && closingDays!.contains(currentDay)) {
+      return 'Closed Today';
+    }
+    
+    // Check if it's weekend (Saturday or Sunday)
+    final isWeekend = currentDay == 6 || currentDay == 0;
+    final hours = isWeekend ? weekendHours : weekdayHours;
+    
+    if (hours == null) return 'No Hours Available';
+    
+    return '${hours['opening']} - ${hours['closing']}';
   }
 } 
